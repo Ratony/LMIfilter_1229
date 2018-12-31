@@ -1,4 +1,4 @@
-%function [Af,Bf,Cf,Lam,Gamma,W,flag]=LMI_FiniteTime_Filter(A,B,C,D,L,pro,pro2,taoM,dM,kesai,Ptrans)
+function [m,AF,BF,CF,delta,A,B,C,L,Lam1,R]=test()
 % This MATLAB program checks the feasibility of LMIs from Theorem 1 of the paper
 
 clear all
@@ -24,7 +24,7 @@ A{2}=[-2 0.3 0;0 -2 0;0 0 -1.8];
 B{2}=[-0.6 0.5 0]';
 C{2}=[0.2 0.2 0];
 L{2}=[0 -0.3 0.2];
-
+% 
 % if 1
 %     A{1}=[-9.1 50;-1 -10];
 %     B{1}=[0 1]';
@@ -49,25 +49,25 @@ L{2}=[0 -0.3 0.2];
 % end
 pro1=0.2;
 pro2=0.8;
-beta=0.8;
+beta=0.5;
 %% Variables assignment
 [m,n]=size(B{1})
 r=n+1;
 m1=m*2;
-R=1*eye(m1);
+R=0.2*eye(m1);
 
 %% constant value
-T1=0.5;
-I1=0.3;
+T1=0.01;
+I1=0.02;
 T2=1/T1;
 I2=1/I1;
 %% SDP variables
 
-s1=sdpvar(m1);
-s2=sdpvar(m1);
+S1=sdpvar(m1);
+S2=sdpvar(m1);
 
-w1=sdpvar(m1);
-w2=sdpvar(m1);
+W1=sdpvar(m1);
+W2=sdpvar(m1);
 
 P1=sdpvar(m);
 P2=sdpvar(m);
@@ -101,10 +101,14 @@ for i=1:2
     end
 end
 
-% s1=R^(1/2)*S1*R^(1/2);
-% s2=R^(1/2)*S2*R^(1/2);
-% w1=R^(1/2)*W1*R^(1/2);
-% w2=R^(1/2)*W2*R^(1/2);
+s1=R^(1/2)*S1*R^(1/2);
+s2=R^(1/2)*S2*R^(1/2);
+w1=R^(1/2)*W1*R^(1/2);
+w2=R^(1/2)*W2*R^(1/2);
+% s1=S1;
+% s2=S2;
+% w1=W1;
+% w2=W2;
 Q=[P1 -P2;-P2 P2];
 %[-pro1* e1;pro1*Bf{1}*C{1} e1];
 e1=zeros(m);
@@ -173,29 +177,30 @@ for i=1:2
     end
 end
 
-
-
+% LL=sdpvar(1);
+% LL=
+%
 %constrain=max(eig(Q1))
 %% solution of LMIs
 
-LMIs=[Q>0,s1>0,s2>0,w1>0,w2>0,1>Gamma>0,Lam1>0,Phi1{1}{1}<0,...,
+LMIs=[Q>0,P1-P2>0,s1>0,s2>0,w1>0,w2>0,0.1>Gamma>0,Lam1>0,Phi1{1}{1}<0,...,
     Phi1{1}{2}<0,Phi1{2}{1}<0,Phi1{2}{2}<0];
 %sol=solvesdp(LMIs,Gamma)
-if 1
+if 0
 options=sdpsettings('solver','sdpt3','verbose',0);
 %sol=solvesdp(LMIs)
 sol=optimize(LMIs)
 sol.solvertime
 sol.yalmiptime
 end
-if 0
+if 1
 options=sdpsettings('solver','sdpt3','verbose',0);
 sol=optimize(LMIs,[],options); 
 
 flag=0
 if sol.problem == 0 
     [primal,~]=check(LMIs); 
-    flag=min(primal)>=0; 
+    flag=min(primal)>=0
 else
     yalmiperror(sol.problem) 
 end
@@ -232,9 +237,35 @@ end
 
 P1=value(P1)
 P2=value(P2)
+for i=1:2
+        AF{i}=inv(P2)*Af{i}{i}
+        BF{i}=inv(P2)*Bf{i}{i}
+        CF{i}=Cf{i}{i}
+end
+
+S1=value(S1)
+S2=value(S2)
+W1=value(W1)
+W2=value(W2)
+
+% 
+% S1=R^(-1/2)*value(S1)*R^(-1/2)
+% S2=R^(-1/2)*value(S2)*R^(-1/2)
+% W1=R^(-1/2)*value(W1)*R^(-1/2)
+% W2=R^(-1/2)*value(W2)*R^(-1/2)
+
+P=R^(-1/2)*[P1 -P2;-P2 P2]*R^(-1/2);
+V0=max(eig(P))+T1*exp(beta*T1)*max(eig(S1))+I1*exp(beta*I1)*max(eig(S2))+...,
+    T1*T1*exp(beta*T1)*max(eig(W1))+I1*I1*exp(beta*I1)*max(eig(W2))
 Lam1=value(Lam1);
-%Lam1=value(Lam1);
-Gamma=value(Gamma);
+%Lam1=value(Lam1);ph(1,1)=Gamma*d/beta-c2*exp(-beta*T)*min(eig(Q));
+Gamma=value(Gamma)
 %xlswrite('filter_parameter.xls',Af);
 end
+d=0.79;
+c2=0.3;
+T=2;
+c1=0.00001;
+ddd=V0*c1+Gamma*d/beta-c2*exp(-beta*T)*min(eig(P))
+index=Gamma*exp(beta*T)
 %end
