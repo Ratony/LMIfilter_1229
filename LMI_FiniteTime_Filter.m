@@ -99,8 +99,8 @@ flag=0;
 Phi1=cell(2,2);
 for i=1:2
     for j=1:2
-            %%%%%i表示对象的下标取值，j表示滤波器下标取值；
-            %定义
+           
+            %瀹氫箟
             Phi1{i}{j}=blkvar;
             
             PA=[P1*A{i} Af{j};-P2*A{i} Af{j}];
@@ -111,7 +111,6 @@ for i=1:2
             Eij=[L{i}';-Cf{j}'];
             Cij=[delta*C{i}'*Lam1*C{i} e1;e1 e1];
             
-            %列举
             Phi1{i}{j}(1,1)=PA+PA'+s1+s2-beta*Q-T2*w1-I2*w2;
         
             Phi1{i}{j}(1,2)=PB1+T2*w1; 
